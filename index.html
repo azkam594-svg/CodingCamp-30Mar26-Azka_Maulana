@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expense &amp; Budget Visualizer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Warning banner (hidden by default, shown on storage errors) -->
+  <div id="warning-banner" class="warning-banner hidden" role="alert" aria-live="polite">
+    <span id="warning-message"></span>
+    <button id="warning-close" aria-label="Dismiss warning">&times;</button>
+  </div>
+
+  <header class="app-header">
+    <div class="header-content">
+      <h1>Expense & Budget Visualizer</h1>
+      <div class="theme-toggle">
+        <button id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Toggle theme">
+          <span class="theme-icon theme-icon-light">☀️</span>
+          <span class="theme-icon theme-icon-dark">🌙</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+
+    <!-- Budget Overview Section -->
+    <section id="overview-section" class="card-balance overview-card">
+      <div class="total-balance">
+        <div class="balance-label">TOTAL BALANCE</div>
+        <div class="balance-amount" id="total-balance">$0.00</div>
+      </div>
+    </section>
+
+    <!-- Expense Form Section -->
+    <section id="form-section" class="card" aria-labelledby="form-heading">
+      <h2 id="form-heading">Add Expense</h2>
+      <form id="expense-form" novalidate>
+        <input type="hidden" id="edit-id" value="" />
+
+        <div class="form-group">
+          <label for="expense-amount">Amount</label>
+          <input type="number" id="expense-amount" name="amount" min="0.01" step="0.01" placeholder="0.00" required />
+          <span class="field-error" id="amount-error" role="alert"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="expense-category">Category</label>
+          <select id="expense-category" name="category" required>
+            <option value="">-- Select category --</option>
+          </select>
+          <span class="field-error" id="category-error" role="alert"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="expense-date">Date</label>
+          <input type="date" id="expense-date" name="date" required />
+          <span class="field-error" id="date-error" role="alert"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="expense-description">Description <span class="optional">(optional)</span></label>
+          <input type="text" id="expense-description" name="description" placeholder="What was this for?" />
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" id="form-submit-btn" class="btn btn-primary">Add Expense</button>
+          <button type="button" id="form-cancel-btn" class="btn btn-secondary hidden">Cancel</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Expense List Section -->
+    <section id="list-section" class="card" aria-labelledby="list-heading">
+      <div class="list-header">
+        <h2 id="list-heading">Expenses</h2>
+        <div class="list-controls">
+          <div class="list-filter">
+            <label for="category-filter">Filter by category:</label>
+            <select id="category-filter">
+              <option value="">All categories</option>
+            </select>
+          </div>
+          <div class="sort-controls">
+            <label for="sort-by">Sort by:</label>
+            <select id="sort-by">
+              <option value="date">Date</option>
+              <option value="amount">Amount</option>
+              <option value="category">Category</option>
+            </select>
+            <button id="sort-direction" class="btn btn-icon sort-direction-btn" aria-label="Toggle sort direction">
+              <span class="sort-icon">↓</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <ul id="expense-list" class="expense-list" aria-label="Expense entries">
+        <li class="empty-state" id="expense-empty">No expenses for this period.</li>
+      </ul>
+    </section>
+
+    <!-- Dashboard Summary Section -->
+    <section id="dashboard-section" class="card" aria-labelledby="dashboard-heading">
+      <div class="dashboard-header">
+        <h2 id="dashboard-heading">Dashboard</h2>
+        <div class="period-nav" aria-label="Period navigation">
+          <button id="prev-period" class="btn btn-icon" aria-label="Previous month">&lsaquo;</button>
+          <span id="active-period-label" class="period-label"></span>
+          <button id="next-period" class="btn btn-icon" aria-label="Next month">&rsaquo;</button>
+        </div>
+      </div>
+
+      <table id="summary-table" class="summary-table" aria-label="Budget vs spending summary">
+        <thead>
+          <tr>
+            <th scope="col">Category</th>
+            <th scope="col">Budgeted</th>
+            <th scope="col">Spent</th>
+            <th scope="col">Remaining</th>
+          </tr>
+        </thead>
+        <tbody id="summary-body">
+          <tr><td colspan="4" class="empty-state">No data for this period.</td></tr>
+        </tbody>
+        <tfoot id="summary-foot"></tfoot>
+      </table>
+    </section>
+
+    <!-- Charts Section -->
+    <section id="charts-section" class="card" aria-labelledby="charts-heading">
+      <h2 id="charts-heading">Charts</h2>
+      <div class="charts-grid">
+        <div class="chart-container">
+          <h3>Spending by Category</h3>
+          <canvas id="pie-chart" width="300" height="300" aria-label="Pie chart of spending by category" role="img"></canvas>
+          <p class="chart-placeholder hidden" id="pie-placeholder">No expense data for this period.</p>
+        </div>
+        <div class="chart-container">
+          <h3>Budget vs Actual</h3>
+          <canvas id="bar-chart" width="400" height="300" aria-label="Bar chart of budget vs actual spending" role="img"></canvas>
+          <p class="chart-placeholder hidden" id="bar-placeholder">No expense data for this period.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Category Management Section -->
+    <section id="category-section" class="card" aria-labelledby="category-heading">
+      <h2 id="category-heading">Categories</h2>
+      <div class="category-add">
+        <input type="text" id="new-category-input" placeholder="New category name" aria-label="New category name" />
+        <button id="add-category-btn" class="btn btn-secondary">Add</button>
+        <span class="field-error" id="category-add-error" role="alert"></span>
+      </div>
+      <ul id="category-list" class="category-list" aria-label="Category list"></ul>
+    </section>
+
+    <!-- Budget Management Section -->
+    <section id="budget-section" class="card" aria-labelledby="budget-heading">
+      <h2 id="budget-heading">Set Budget</h2>
+      <form id="budget-form" novalidate>
+        <div class="form-group">
+          <label for="budget-category">Category</label>
+          <select id="budget-category" required>
+            <option value="">-- Select category --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="budget-amount">Monthly Budget</label>
+          <input type="number" id="budget-amount" min="0.01" step="0.01" placeholder="0.00" required />
+          <span class="field-error" id="budget-amount-error" role="alert"></span>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Set Budget</button>
+        </div>
+      </form>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
